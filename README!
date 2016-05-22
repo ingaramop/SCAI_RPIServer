@@ -1,0 +1,93 @@
+Los codigos fuente y archivos de configuracion se encuentran en esta carpeta.
+El script "compile.sh" realiza la compilacion de los mismos.
+El script "deploy.sh" los coloca en los directorios correspondientes y reinicia los servicios de modo que queden funcionando.
+
+DIRECTORIOS APACHE
+https://www.digitalocean.com/community/tutorials/how-to-configure-the-apache-web-server-on-an-ubuntu-or-debian-vps
+/etc/apache2 -> PRINCIPALES ARCHIVOS DE CONFIGURACION
+/etc/apache2/sites-available/ -> ARCHIVOS DE CONFIGURACION INDIVIDUAL DE CADA UNO DE LOS SITIOS
+/var/log/apache2 -> LOGS
+
+CONFIGURACION FASTCGI
+http://stackoverflow.com/questions/14596199/run-a-c-program-on-a-linux-server
+1) sudo apt-get install libfcgi-dev -> INSTALA EL PAQUETE DE FASTCGI
+2) sudo apt-get install libapache2-mod-fcgid -> INSTALA EL MODULO FCGI DE APACHE
+3) sudo a2enmod fcgid (en carpeta /etc/apache2/mods-available) -> HABILITA EL MODULO
+4) sudo gcc example.c -lfcgi -o /usr/lib/cgi-bin/example.fcgi -> COMPILA PROGRAMAS EN C CON FCGI
+5) sudo service apache2 restart -> REINICIA EL SERVICIO APACHE2 PARA APLICAR LOS CAMBIOS
+
+CONFIGURACION SSH
+Para poder realizar deploys automaticos en la RPI2, necesitamos configurar un login sin password, sino a traves de par clave publica/privada
+Los pasos para esto son los siguientes:
+https://www.raspberrypi.org/documentation/remote-access/ssh/passwordless.md
+1) ssh-keygen -t rsa -> GENERA PAR DE CLAVES EN LA COMPUTADORA CLIENTE (DEFAULT EN /home/paul/.ssh/id_rsa)
+2) install -d -m 700 /home/pi/.ssh -> CREO EL DIRECTORIO .ssh EN LA RPI, PARA PODER PONER LA CLAVE PUBLICA
+3) cat ~/.ssh/id_rsa.pub | ssh <USERNAME>@<IP-ADDRESS> 'cat >> .ssh/authorized_keys -> COPIO LA CLAVE PUBLICA DESDE EL CLIENTE A LA RPI
+4) ssh <USERNAME>@<IP-ADDRESS> -> DEBERIA INGRESAR POR SSH CON ESTE COMANDO, SIN PASSWORD
+
+CONFIGURACION htaccess + htpasswd (CONTROL DE ACCESO AL CONTENIDO WEB)
+https://www.digitalocean.com/community/tutorials/how-to-set-up-password-authentication-with-apache-on-ubuntu-14-04
+1) sudo nano /etc/apache2/apache2.conf -> MODIFICA LA CONFIGURACION DEL DIRECTORIO RAIZ DONDE SE ENCUENTRE EL SITIO:
+		<Directory /var/www/>
+			Options Indexes FollowSymLinks
+			AllowOverride All
+			Require all granted
+		</Directory>
+2) sudo nano /var/www/html/.htaccess -> CREAR EL ARCHIVO:
+		AuthType Basic
+		AuthName "Restricted Content"
+		AuthUserFile /etc/apache2/.htpasswd
+		Require valid-user
+3) sudo apt-get install apache2 apache2-utils -> INSTALA LAS UTILIDADES APACHE, QUE INCLUYEB httpsswd
+4) sudo htpasswd -c /etc/apache2/.htpasswd <USER NAME> -> CREA EL ARCHIVO DE PASSWORD
+5) sudo service apache2 restart -> REINICIA EL SERVICIO
+
+INSTALACION SISTEMA OPERATIVO
+https://www.raspberrypi.org/downloads/raspbian/ -> DESCARGA DE RASPBIAN JESSE LITE
+sha1sum <NOMBRE ARCHIVO> -> COMPRUEBA EL CHECKSUM Y LA CORRECTA DESCARGA DE LA IMAGEN
+https://www.raspberrypi.org/documentation/installation/installing-images/linux.md -> MONTAR RASPBIAN EN TARJETA SD
+
+FORMULARIOS EN PHP
+sudo apt-get install php5 libapache2-mod-php5 php5-mcrypt -> INSTALAR PHP
+http://www.phpform.org/
+
+CONFIGURACION DIRECTORIOS EN RPI (PREVIO AL PRIMER DEPLOY)
+1) DESHABILITAR TODOS LOS SITIOS QUE SE ENCUENTREN HABILITADOS EN /etc/apache2/sites-enabled, utilizando el comando a2dissite <NOMBRE SITIO>
+2) sudo rm /var/www/*
+3) sudo mkdir /var/www/pi
+4) sudo mkdir /var/www/pi/html -> AQUI SE COLOCAN LOS SITIOS WEB HTML
+5) sudo mkdir /var/www/pi/cgi-bin -> AQUI SE COLOCAN LOS SCRIPTS PUBLICOS
+6) sudo mkdir /home/pi/code -> AQUI SE COLOCAN LOS CODIGOS DE FUENTE CUANDO SE HACE LA TRANSFERENCIA REMOTA POR SSH
+
+INSTALAR INTERFAZ GRAFICA A RASPBIAN JESSIE LITE
+1) apt-get update && apt-get upgrade && apt-get install xserver-xorg xinit xserver-xorg-video-fbdev lxde lxde-common
+
+CONFIGURACION DEL SERVIDOR VNC
+https://www.raspberrypi.org/documentation/remote-access/vnc/
+
+CONFIGURACION DEL WIRELESS DESDE COMMAND LINE
+https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md
+
+SENSOR BERRYIMU
+http://ozzmaker.com/product/berryimu-accelerometer-gyroscope-magnetometer-barometricaltitude-sensor/
+	ACTIVAR LA INTERFAZ I2C EN RPI2:
+	http://ozzmaker.com/i2c/
+	1) sudo apt-get update 
+	2) sudo apt-get install i2c-tools libi2c-dev python-smbus -> INSTALA LOS PAQUETES NECESARIOS DE I2C
+	3) sudo nano /etc/modules -> AGREGAR LAS SIGUIENTES LINEAS AL FINAL PARA QUE CARGUE LOS MODULOS I2C AL INICIO DEL OS:
+	i2c-dev
+	i2c-bcm2708
+	4) sudo nano /boot/config.txt -> AGREGAR LO SIGUIENTE:
+	dtparam=i2c_arm=on
+	dtparam=i2c1=on
+	5) sudo reboot -> REINICIAR LA RPI PARA APLICAR LOS CAMBIOS
+	6) sudo i2cdetect -y 1 -> DETECTA AUTOMATICAMENTE LOS DISPOSITIVOS CONECTADOS POR I2C Y LOS VISUALIZA
+
+	INTERFACEAR GYRO Y ACELEROMETRO CON LA RPI
+	http://ozzmaker.com/berryimu/
+	1) 
+
+
+
+
+
