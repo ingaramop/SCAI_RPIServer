@@ -10,58 +10,55 @@
 
 
 class TrailerData {
-	struct tm *dateTime;
-	int inclination; //degrees
+	int tipperInclination; //degrees
+	int sideInclination; //degrees
 	int speed; //hm/h
-	int positionX, positionY; //coordenadas 
-	int orientation; //degrees
+	int positionX , positionY; //coordenadas 
+	int compass; //degrees
 	int temperature; //celsius
+	int altitude;
   public:
-    void setDateTime (); //consulta y setea el horario del sistema
 	void printData(); 
 	void setSensorValues();//consulta y setea la informacion del sensor (inclinacion, orientacion, temperatura)
 	void setSpeedPosition(); //consulta GPS y setea posicion y velocidad
+	void setAltitude(); //reads altitude from sensor
+	TrailerData();
 };
 
-void TrailerData::setDateTime () {
-    time_t timer;
-    time(&timer);
-    dateTime = localtime(&timer);
-    
-	return;
+TrailerData::TrailerData(){
+	tipperInclination = 0; //degrees
+	sideInclination = 0; //degrees
+	speed = 0; //hm/h
+	positionX = 0, positionY = 0; //coordenadas 
+	compass = 0; //degrees
+	temperature = 0; //celsius
+	altitude = 200;
 }
 
+
 void TrailerData::printData () {
-    char date_str[50];	
-	char time_str[60];
-	strftime(date_str, sizeof(time_str), "<year>%Y</year><month>%m</month><day>%d</day>", dateTime); //armo string con data de la fecha
-	strftime(time_str, sizeof(time_str), "<hsour>%H</hour><minute>%M</minute><second>%S</second>", dateTime);//armo string con data de la hora
-	printf("	<date>");
-	printf("		%s", date_str);
-	printf("	</date>");
-	printf("	<time>");
-	printf("		%s", time_str);
-	printf("	</time>");
-	printf("	<inclination>%d</inclination>", inclination);
+	printf("	<altitude>%d</altitude>", altitude);
+	printf("	<tipperInclination>%d</tipperInclination>", tipperInclination);
+	printf("	<sideInclination>%d</sideInclination>", sideInclination);
 	printf("	<speed>%d</speed>", speed);
-	printf("	<position>");
-	printf("		<x>%d</x><y>%d</y>", positionX, positionY);
-	printf("	</position>");
-	printf("	<orientation>%d</orientation>", orientation);
+	printf("	<positionX>%d</positionX>", positionX);
+	printf("	<positionY>%d</positionY>", positionY);
+	printf("	<compass>%d</compass>", compass);
 	printf("	<temperature>%d</temperature>", temperature);
 	return;
 }
 void TrailerData::setSensorValues () {
-    inclination = rand() % 90;	
-	orientation = rand() % 360;
-	temperature = (rand() % 50) - 10;
-
+    tipperInclination += (rand() % 3)-1;	
+	sideInclination += (rand() % 2)-1;	
+	compass += ((rand() % 3)-1);
+	temperature += (rand() % 3)-1;
+	altitude += (rand() % 3)-1;	
 	return;
 }
 void TrailerData::setSpeedPosition () {
-	speed = rand() % 120;
-	positionX = rand() % 1000000;
-	positionY = rand() % 1000000;
+	speed += (rand() % 3)-1;
+	positionX += (rand() % 3)-1;
+	positionY += (rand() % 3)-1;
 	return;
 }
 
@@ -74,13 +71,9 @@ int main(int argc, char **argv)
 	TrailerData trailer;
 
     while(FCGI_Accept() >= 0)   {
-        //time(&timer);
-        //tm_info = localtime(&timer);
-        //strftime(time_str, sizeof(time_str), "%Y/%m/%d %H:%M:%S", tm_info);
 
         /* Without this line, you will get 500 error */
 
-  		trailer.setDateTime();
 		trailer.setSpeedPosition();
 		trailer.setSensorValues();
 
