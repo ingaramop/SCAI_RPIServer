@@ -48,9 +48,9 @@ void TrailerData::printData () {
 	return;
 }
 void TrailerData::setSensorValues () {
-    tipperInclination += (rand() % 3)-1;	
-	sideInclination += (rand() % 2)-1;	
-	compass += ((rand() % 3)-1);
+    tipperInclination = (rand() % 35);	
+	sideInclination = (rand() % 70)-35;	
+	compass += ((rand() % 30)-1);
 	temperature += (rand() % 3)-1;
 	altitude += (rand() % 3)-1;	
 	return;
