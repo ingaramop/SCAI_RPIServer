@@ -32,6 +32,7 @@
 #include <string.h>
 #include <time.h>
 #include "sensor.c"
+#include "bmp180.h"
 
 
 #define DT 0.02         // [s/loop] loop period. 20ms
@@ -81,39 +82,167 @@ void  INThandler(int sig)
 }*/
 
 ////////////// Compass Functions/////////////////////////////
-int file;
 int compassRead(float *compass);
+
+////////////// bmp180 Functions/////////////////////////////
+int tempPressureRead (float *temp, float *altitude, long *pressure);
 
 ////////////Main Function//////////////////////////////
 int main(int argc, char *argv[]){
 
-///kalman execution////
-float kalmanX =0;
-float kalmanY =0;
-float *px = &kalmanX;
-float *py = &kalmanY;
-if (kalmanInclinationRead(px, py) < 0){//if error
-	kalmanX=-999.9;
-	kalmanY=-999.9;
-		printf ("Error calculating inclination.");
-	}
-else{
-		printf ("kalmanX %f kalmanY %f \n",kalmanX,kalmanY);
-	}
+	///kalman execution////
+	float kalmanX =0;
+	float kalmanY =0;
+	float *px = &kalmanX;
+	float *py = &kalmanY;
+	if (kalmanInclinationRead(px, py) < 0){//if error
+		kalmanX=-999.9;
+		kalmanY=-999.9;
+			printf ("Error calculating inclination.");
+		}
+	else{
+			printf ("kalmanX %f kalmanY %f \n",kalmanX,kalmanY);
+		}
 
-////compass execution//////
+	////compass execution//////
 	float compass =0;
 	float *pcompass = &compass;
 
-if (compassRead(pcompass) < 0){//if error
-	compass=-999.9;
-		printf ("Error calculating inclination.");
-	}
-else{
-		printf ("compass %f \n",compass);
-	}
-	
+	if (compassRead(pcompass) < 0){//if error
+		compass=-999.9;
+			printf ("Error calculating inclination.");
+		}
+	else{
+			printf ("compass %f \n",compass);
+		}
 
+	//// bmp180 execution /////////
+	float altitude;
+	long pressure;
+	float temperature;
+
+	float *paltitude = &altitude;
+	long *ppressure = &pressure;
+	float *ptemperature = &temperature;
+
+	if (tempPressureRead(ptemperature, paltitude, ppressure) < 0){//if error
+		temperature = -999.9;
+		pressure = -999.9;
+		altitude = -999.9;
+			//printf ("Error calculating inclination.");
+		}
+	else{
+			printf ("pressure: %d temperature: %f altitude: %f \n",pressure, temperature, altitude);
+		}	
+}
+
+
+///////////Compass Functions implementation//////////////////////////
+int compassRead(float *compass)
+{
+	char filename[20];
+	int magRaw[3];
+	int accRaw[3];
+	float accXnorm,accYnorm,pitch,roll,magXcomp,magYcomp;
+	int file;
+
+	//Open the i2c bus
+	sprintf(filename, "/dev/i2c-%d", 1);
+	file = open(filename, O_RDWR);
+	if (file<0) {
+        	printf("Unable to open I2C bus!");
+                exit(1);
+	}
+
+
+	//Select the magnetomoter
+	if (ioctl(file, I2C_SLAVE, MAG_ADDRESS) < 0) {
+                printf("Error: Could not select magnetometer\n");
+        }
+
+
+
+	// Enable accelerometer.
+        writeAccReg(CTRL_REG1_XM, 0b01100111); //  z,y,x axis enabled, continuos update,  100Hz data rate
+        writeAccReg(CTRL_REG2_XM, 0b00100000); // +/- 16G full scale
+
+        //Enable the magnetometer
+        writeMagReg( CTRL_REG5_XM, 0b11110000);   // Temp enable, M data rate = 50Hz
+        writeMagReg( CTRL_REG6_XM, 0b01100000);   // +/-12gauss
+        writeMagReg( CTRL_REG7_XM, 0b00000000);   // Continuous-conversion mode
+
+		//comienzo del ex while
+		readMAG(magRaw);
+		readACC(accRaw);
+
+		//If your IMU is upside down, comment out the two lines below which we correct the tilt calculation
+		//accRaw[0] = -accRaw[0];
+		//accRaw[1] = -accRaw[1];
+
+		//Compute heading
+	        float heading = 180 * atan2(magRaw[1],magRaw[0])/M_PI;
+
+		//Convert heading to 0 - 360
+        	if(heading < 0)
+	  	      heading += 360;
+
+		//printf("heading %7.3f \t ", heading);
+
+		//Normalize accelerometer raw values.
+                accXnorm = accRaw[0]/sqrt(accRaw[0] * accRaw[0] + accRaw[1] * accRaw[1] + accRaw[2] * accRaw[2]);
+                accYnorm = accRaw[1]/sqrt(accRaw[0] * accRaw[0] + accRaw[1] * accRaw[1] + accRaw[2] * accRaw[2]);
+
+		//Calculate pitch and roll
+		pitch = asin(accXnorm);
+		roll = -asin(accYnorm/cos(pitch));
+
+		//Calculate the new tilt compensated values
+		magXcomp = magRaw[0]*cos(pitch)+magRaw[02]*sin(pitch);
+		magYcomp = magRaw[0]*sin(roll)*sin(pitch)+magRaw[1]*cos(roll)-magRaw[2]*sin(roll)*cos(pitch);
+
+
+		//Calculate heading
+		heading = 180*atan2(magYcomp,magXcomp)/M_PI;
+
+                //Convert heading to 0 - 360
+		if(heading < 0)
+		      heading += 360;
+
+		(*compass) = heading;
+		//printf("Compensated  Heading %7.3f  \n", heading);
+
+}
+
+///////////////// bmp180 altitide temperature implementation ////////////////
+int tempPressureRead (float *temp, float *altitude, long *pressure){
+	/*char *i2c_device = "/dev/i2c-1";
+	int address = 0x77;
+	
+	void *bmp = bmp180_init(address, i2c_device);
+	
+	bmp180_eprom_t eprom;
+	bmp180_dump_eprom(bmp, &eprom);
+	
+	
+	bmp180_set_oss(bmp, 1);
+	
+	if(bmp != NULL){
+		int i;
+		for(i = 0; i < 10; i++) {
+			float t = bmp180_temperature(bmp);
+			long p = bmp180_pressure(bmp);
+			float alt = bmp180_altitude(bmp);
+			printf("t = %f, p = %lu, a= %f\n", t, p, alt);
+			usleep(2 * 1000 * 1000);
+		}
+	
+		bmp180_close(bmp);
+	}*/
+	(*altitude)= 0.123;
+	(*pressure)= 456;
+	(*temp)= 0.789;
+	
+	return 0;
 }
 
 ////////////Kalman Inclination functions implementation///////////////
@@ -128,7 +257,6 @@ int kalmanInclinationRead(float *kalmanX, float *kalmanY)
 	int  accRaw[3];
 	int  magRaw[3];
 	int  gyrRaw[3];
-
 
 
 	float gyroXangle = 0.0;
@@ -211,37 +339,37 @@ int kalmanInclinationRead(float *kalmanX, float *kalmanY)
 }
 
 
-  float kalmanFilterX(float accAngle, float gyroRate)
-  {
-    float  y, S;
-    float K_0, K_1;
+float kalmanFilterX(float accAngle, float gyroRate)
+{
+	float  y, S;
+	float K_0, K_1;
 
 
-    KFangleX += DT * (gyroRate - x_bias);
+	KFangleX += DT * (gyroRate - x_bias);
 
-    XP_00 +=  - DT * (XP_10 + XP_01) + Q_angle * DT;
-    XP_01 +=  - DT * XP_11;
-    XP_10 +=  - DT * XP_11;
-    XP_11 +=  + Q_gyro * DT;
+	XP_00 +=  - DT * (XP_10 + XP_01) + Q_angle * DT;
+	XP_01 +=  - DT * XP_11;
+	XP_10 +=  - DT * XP_11;
+	XP_11 +=  + Q_gyro * DT;
 
-    y = accAngle - KFangleX;
-    S = XP_00 + R_angle;
-    K_0 = XP_00 / S;
-    K_1 = XP_10 / S;
+	y = accAngle - KFangleX;
+	S = XP_00 + R_angle;
+	K_0 = XP_00 / S;
+	K_1 = XP_10 / S;
 
-    KFangleX +=  K_0 * y;
-    x_bias  +=  K_1 * y;
-    XP_00 -= K_0 * XP_00;
-    XP_01 -= K_0 * XP_01;
-    XP_10 -= K_1 * XP_00;
-    XP_11 -= K_1 * XP_01;
+	KFangleX +=  K_0 * y;
+	x_bias  +=  K_1 * y;
+	XP_00 -= K_0 * XP_00;
+	XP_01 -= K_0 * XP_01;
+	XP_10 -= K_1 * XP_00;
+	XP_11 -= K_1 * XP_01;
 
-    return KFangleX;
-  }
+	return KFangleX;
+}
 
 
   float kalmanFilterY(float accAngle, float gyroRate)
-  {
+{
     float  y, S;
     float K_0, K_1;
 
@@ -266,86 +394,7 @@ int kalmanInclinationRead(float *kalmanX, float *kalmanY)
     YP_11 -= K_1 * YP_01;
 
     return KFangleY;
-  }
-///////////Compass Functions implementation//////////////////////////
-int compassRead(float *compass)
-
-{
-	char filename[20];
-	int magRaw[3];
-	int accRaw[3];
-	float accXnorm,accYnorm,pitch,roll,magXcomp,magYcomp;
-
-
-
-
-	//Open the i2c bus
-	sprintf(filename, "/dev/i2c-%d", 1);
-	file = open(filename, O_RDWR);
-	if (file<0) {
-        	printf("Unable to open I2C bus!");
-                exit(1);
-	}
-
-
-	//Select the magnetomoter
-	if (ioctl(file, I2C_SLAVE, MAG_ADDRESS) < 0) {
-                printf("Error: Could not select magnetometer\n");
-        }
-
-
-
-	// Enable accelerometer.
-        writeAccReg(CTRL_REG1_XM, 0b01100111); //  z,y,x axis enabled, continuos update,  100Hz data rate
-        writeAccReg(CTRL_REG2_XM, 0b00100000); // +/- 16G full scale
-
-        //Enable the magnetometer
-        writeMagReg( CTRL_REG5_XM, 0b11110000);   // Temp enable, M data rate = 50Hz
-        writeMagReg( CTRL_REG6_XM, 0b01100000);   // +/-12gauss
-        writeMagReg( CTRL_REG7_XM, 0b00000000);   // Continuous-conversion mode
-
-		//comienzo del ex while
-		readMAG(magRaw);
-		readACC(accRaw);
-
-		//If your IMU is upside down, comment out the two lines below which we correct the tilt calculation
-		//accRaw[0] = -accRaw[0];
-		//accRaw[1] = -accRaw[1];
-
-		//Compute heading
-	        float heading = 180 * atan2(magRaw[1],magRaw[0])/M_PI;
-
-		//Convert heading to 0 - 360
-        	if(heading < 0)
-	  	      heading += 360;
-
-		//printf("heading %7.3f \t ", heading);
-
-		//Normalize accelerometer raw values.
-                accXnorm = accRaw[0]/sqrt(accRaw[0] * accRaw[0] + accRaw[1] * accRaw[1] + accRaw[2] * accRaw[2]);
-                accYnorm = accRaw[1]/sqrt(accRaw[0] * accRaw[0] + accRaw[1] * accRaw[1] + accRaw[2] * accRaw[2]);
-
-		//Calculate pitch and roll
-		pitch = asin(accXnorm);
-		roll = -asin(accYnorm/cos(pitch));
-
-		//Calculate the new tilt compensated values
-		magXcomp = magRaw[0]*cos(pitch)+magRaw[02]*sin(pitch);
-		magYcomp = magRaw[0]*sin(roll)*sin(pitch)+magRaw[1]*cos(roll)-magRaw[2]*sin(roll)*cos(pitch);
-
-
-		//Calculate heading
-		heading = 180*atan2(magYcomp,magXcomp)/M_PI;
-
-                //Convert heading to 0 - 360
-		if(heading < 0)
-		      heading += 360;
-
-		(*compass) = heading;
-		//printf("Compensated  Heading %7.3f  \n", heading);
-
 }
-
 
 
 
