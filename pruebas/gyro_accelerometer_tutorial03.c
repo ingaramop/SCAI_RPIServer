@@ -132,8 +132,9 @@ int main(int argc, char *argv[]){
 			//printf ("Error calculating inclination.");
 		}
 	else{
-			printf ("pressure: %d temperature: %f altitude: %f \n",pressure, temperature, altitude);
+			printf ("pressure: %li temperature: %f altitude: %f \n",pressure, temperature, altitude);
 		}	
+	return 0;
 }
 
 
@@ -210,12 +211,12 @@ int compassRead(float *compass)
 
 		(*compass) = heading;
 		//printf("Compensated  Heading %7.3f  \n", heading);
-
+	return 0;
 }
 
 ///////////////// bmp180 altitide temperature implementation ////////////////
 int tempPressureRead (float *temp, float *altitude, long *pressure){
-	/*char *i2c_device = "/dev/i2c-1";
+	char *i2c_device = "/dev/i2c-1";
 	int address = 0x77;
 	
 	void *bmp = bmp180_init(address, i2c_device);
@@ -227,21 +228,17 @@ int tempPressureRead (float *temp, float *altitude, long *pressure){
 	bmp180_set_oss(bmp, 1);
 	
 	if(bmp != NULL){
-		int i;
-		for(i = 0; i < 10; i++) {
-			float t = bmp180_temperature(bmp);
-			long p = bmp180_pressure(bmp);
-			float alt = bmp180_altitude(bmp);
-			printf("t = %f, p = %lu, a= %f\n", t, p, alt);
-			usleep(2 * 1000 * 1000);
-		}
+		//int i;
+		(*temp) = bmp180_temperature(bmp);
+		(*pressure) = bmp180_pressure(bmp);
+		(*altitude) = bmp180_altitude(bmp);
 	
 		bmp180_close(bmp);
-	}*/
-	(*altitude)= 0.123;
+	}
+
+		/*(*altitude)= 0.123;
 	(*pressure)= 456;
-	(*temp)= 0.789;
-	
+	(*temp)= 0.789;*/
 	return 0;
 }
 
@@ -255,7 +252,7 @@ int kalmanInclinationRead(float *kalmanX, float *kalmanY)
 	float rate_gyr_z = 0.0;     // [deg/s]
 
 	int  accRaw[3];
-	int  magRaw[3];
+	//int  magRaw[3];
 	int  gyrRaw[3];
 
 
@@ -264,18 +261,18 @@ int kalmanInclinationRead(float *kalmanX, float *kalmanY)
 	float gyroZangle = 0.0;
 	float AccYangle = 0.0;
 	float AccXangle = 0.0;
-	float CFangleX = 0.0;
-	float CFangleY = 0.0;
+	//float CFangleX = 0.0;
+	//float CFangleY = 0.0;
 
 	//int startInt  = mymillis();
-	struct  timeval tvBegin, tvEnd,tvDiff;
+	//struct  timeval tvBegin, tvEnd,tvDiff;
 
 
     signal(SIGINT, INThandler);
 
 	enableIMU();
 
-	gettimeofday(&tvBegin, NULL);
+	//gettimeofday(&tvBegin, NULL);
 
 
 	//read ACC and GYR data
