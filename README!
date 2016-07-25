@@ -22,7 +22,7 @@ Los pasos para esto son los siguientes:
 https://www.raspberrypi.org/documentation/remote-access/ssh/passwordless.md
 1) ssh-keygen -t rsa -> GENERA PAR DE CLAVES EN LA COMPUTADORA CLIENTE (DEFAULT EN /home/paul/.ssh/id_rsa)
 2) install -d -m 700 /home/pi/.ssh -> CREO EL DIRECTORIO .ssh EN LA RPI, PARA PODER PONER LA CLAVE PUBLICA
-3) cat ~/.ssh/id_rsa.pub | ssh <USERNAME>@<IP-ADDRESS> 'cat >> .ssh/authorized_keys -> COPIO LA CLAVE PUBLICA DESDE EL CLIENTE A LA RPI
+3) cat ~/.ssh/id_rsa.pub | ssh <USERNAME>@<IP-ADDRESS> 'cat >> .ssh/authorized_keys' -> COPIO LA CLAVE PUBLICA DESDE EL CLIENTE A LA RPI
 4) ssh <USERNAME>@<IP-ADDRESS> -> DEBERIA INGRESAR POR SSH CON ESTE COMANDO, SIN PASSWORD
 
 CONFIGURACION htaccess + htpasswd (CONTROL DE ACCESO AL CONTENIDO WEB)
@@ -41,6 +41,7 @@ https://www.digitalocean.com/community/tutorials/how-to-set-up-password-authenti
 3) sudo apt-get install apache2 apache2-utils -> INSTALA LAS UTILIDADES APACHE, QUE INCLUYEB httpsswd
 4) sudo htpasswd -c /etc/apache2/.htpasswd <USER NAME> -> CREA EL ARCHIVO DE PASSWORD
 5) sudo service apache2 restart -> REINICIA EL SERVICIO
+6) (user: admin passwd: raspberry)
 
 INSTALACION SISTEMA OPERATIVO
 https://www.raspberrypi.org/downloads/raspbian/ -> DESCARGA DE RASPBIAN JESSE LITE
@@ -87,6 +88,38 @@ http://ozzmaker.com/product/berryimu-accelerometer-gyroscope-magnetometer-barome
 	http://ozzmaker.com/berryimu/
 	1) 
 
+
+INSTALACION MYSQL
+https://www.stewright.me/2014/06/tutorial-install-mysql-server-on-raspberry-pi/
+	1) sudo apt-get install mysql-server mysql-client php5-mysql -y -> Instala mysql server, mysqlclient y su modulo PHP
+	root password: raspberry
+	2) mysql -uroot -hlocalhost -p -> Open mysql and login
+	3) CREATE DATABASE scai; -> Crea base de datos
+	4) CREATE USER 'pi'@'localhost' IDENTIFIED BY 'raspberry'; -> Creo usuario: pi pass: raspberry
+	5) GRANT ALL PRIVILEGES ON scai.* TO 'pi'@'localhost'; -> Doy permisos al usuario sobre la nueva db
+	6) FLUSH PRIVILEGES; -> Refresco privilegiso para que hagan efecto los cambios
+	7) mysql -upi -hlocalhost scai -p -> Salgo y vuelvo a ingresar con el nuevo usuario
+	8) use scai -> Pongo en uso la nueva db
+	9) create table history (
+		id int not null auto_increment primary key,
+		date datetime,
+		tipperInclination int,
+		sideInclination int,
+		compass int,
+		temperature double,
+		pressure double,
+		positionX double,
+		positionY double,
+		timestamp double,
+		image blob);
+
+
+
+DATABASE UPDATER SERVICE
+https://www.raspberrypi.org/documentation/linux/usage/rc-local.md
+
+		
+		
 
 
 

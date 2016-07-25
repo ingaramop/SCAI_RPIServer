@@ -63,7 +63,7 @@ void  INThandler(int sig)
 int compassRead(float *compass);
 
 ////////////// bmp180 Functions/////////////////////////////
-int tempPressureRead (float *temp, float *altitude, long *pressure);
+int tempPressureRead (float *temp, long *pressure);
 
 ////////////Main Function//////////////////////////////
 int main(int argc, char *argv[]){
@@ -96,33 +96,29 @@ int main(int argc, char *argv[]){
 			}
 
 		//// bmp180 execution /////////
-		float altitude;
 		long pressure;
 		float temperature;
 
-		float *paltitude = &altitude;
 		long *ppressure = &pressure;
 		float *ptemperature = &temperature;
 
-		if (tempPressureRead(ptemperature, paltitude, ppressure) < 0){//if error
+		if (tempPressureRead(ptemperature, ppressure) < 0){//if error
 			temperature = -999.9;
 			pressure = -999.9;
-			altitude = -999.9;
 				//printf ("Error calculating inclination.");
 			}
 		else{
-				//printf ("pressure: %li temperature: %f altitude: %f \n",pressure, temperature, altitude);
+				//printf ("pressure: %li temperature: %f \n",pressure, temperature);
 			}
 
 		accX >= 0.0f ? (accX+0.5f) : (accX-0.5f); //these are for rounding float purposes, in order to late cast to int.
 		accY >= 0.0f ? (accY+0.5f) : (accY-0.5f);
 		compass >= 0.0f ? (compass+0.5f) : (compass-0.5f);
-		altitude >= 0.0f ? (altitude+0.5f) : (altitude-0.5f);
+
 
 		puts("Content-type: application/xml\n");
 		puts("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 		puts("<Response>");
-		printf("	<altitude>%d</altitude>", (int)altitude);
 		printf("	<tipperInclination>%d</tipperInclination>", (int) accY);
 		printf("	<sideInclination>%d</sideInclination>", (int)accX);
 		printf("	<compass>%d</compass>", (int)compass);
@@ -206,7 +202,7 @@ int compassRead(float *compass)
 		//if(heading < 0)
 		//      heading += 360;
 
-		(*compass) = heading;
+		(*compass) = heading ;
 
 		
 		//printf("Compensated  Heading %7.3f  \n", heading);
@@ -214,7 +210,7 @@ int compassRead(float *compass)
 }
 
 ///////////////// bmp180 altitide temperature implementation ////////////////
-int tempPressureRead (float *temp, float *altitude, long *pressure){
+int tempPressureRead (float *temp, long *pressure){
 	char *i2c_device = "/dev/i2c-1";
 	int address = 0x77;
 	
@@ -230,7 +226,6 @@ int tempPressureRead (float *temp, float *altitude, long *pressure){
 		//int i;
 		(*temp) = bmp180_temperature(bmp);
 		(*pressure) = bmp180_pressure(bmp);
-		(*altitude) = bmp180_altitude(bmp);
 	
 		bmp180_close(bmp);
 	}

@@ -29,12 +29,11 @@ ImuData::ImuData(){
 	compass = 0; //degrees
 	temperature = 0; //celsius
 	altitude = 200;
-	pressure = 1000;
+	pressure = 1018;
 }
 
 
 void ImuData::printData () {
-	printf("	<altitude>%d</altitude>", altitude);
 	printf("	<tipperInclination>%d</tipperInclination>", tipperInclination);
 	printf("	<sideInclination>%d</sideInclination>", sideInclination);
 	printf("	<compass>%d</compass>", compass);
@@ -43,12 +42,17 @@ void ImuData::printData () {
 	return;
 }
 void ImuData::setSensorValues () {
-    tipperInclination = (rand() % 35);	
-	sideInclination = (rand() % 50)-25;	
-	compass += ((rand() % 30)-1);
+	
+    tipperInclination += (rand() % 9)-4;	
+	if (tipperInclination < 0) tipperInclination =5;
+	if (tipperInclination > 35) tipperInclination =30;
+	sideInclination += (rand() % 9)-4;	
+	if (sideInclination < -30) sideInclination =-25;
+	if (sideInclination > 30) sideInclination =25;	
+	compass += ((rand() % 30)-15);
 	temperature += (rand() % 3)-1;
 	altitude += (rand() % 3)-1;	
-	pressure += (rand() % 3)-1;
+	//pressure += (rand() % 3)-1;
 	return;
 }
 

@@ -22,6 +22,7 @@ rm -f webserver/cgi-bin/*.o
 cp webserver/sites-available/default.conf /etc/apache2/sites-available/
 cp -R webserver/cgi-bin/*.fcgi /var/www/pi/cgi-bin/
 cp -R webserver/cgi-bin/*.cgi /var/www/pi/cgi-bin/
+cp -R webserver/cgi-bin/*.sh /var/www/pi/cgi-bin/
 cp -R webserver/cgi-bin/systemInfo.cgi /var/www/pi/html/
 cp -R webserver/html/* /var/www/pi/html/
 #cp webserver/apache2.conf /etc/apache2/

@@ -7,11 +7,15 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <stdlib.h>
+#include <math.h>
 
+#define PI 3.14159265
 
 class GpsData {
 	long timestamp; 
 	float positionX  , positionY ; //coordenadas 
+	float initialPositionX  , initialPositionY ; //coordenadas 
+	double counter;
 
 
   public:
@@ -23,7 +27,9 @@ class GpsData {
 GpsData::GpsData(){
 
 	timestamp = 0; //hm/h
-	positionX= -31.435348f, positionY = -64.193980f; //coordenadas 
+	initialPositionX= -31.435348f, initialPositionY = -64.193980f; //coordenadas 
+	positionX= initialPositionX, positionY = initialPositionY; //coordenadas 
+	counter =0.0;
 }
 
 
@@ -39,10 +45,13 @@ void GpsData::setSpeedPosition () {
 	struct timeval tv;
 
 	gettimeofday(&tv,NULL);
+
  
 	timestamp = (long)(tv.tv_sec * 1000 +(tv.tv_usec/1000)); // milliseconds
-	positionX += (rand() % 10)*0.00005f-0.00025;
-	positionY += (rand() % 10)*0.00005f-0.00025;
+	positionX += sin (counter*(PI/180)) * (0.0004f + (rand() % 10)*0.000035f);
+	positionY += cos (counter*(PI/180)) * (0.0004f +  (rand() % 10)*0.000035f);
+
+	counter += 3.0;
 	return;
 }
 
