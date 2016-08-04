@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>CONFIGURACION SCAI</title>
+<link rel="stylesheet" type="text/css" href="view.css" media="all">
+<script type="text/javascript" src="view.js"></script>
+
+</head>
+<body id="main_body" >
+	
+	<img id="top" src="top.png" alt="">
+	<div id="form_container">
+	
+		<h1><a>SCAI CONFIGURATION</a></h1>
+		<form id="form_1117648" class="appnitro"  method="post" action="">
+					<div class="form_description">
+			<h2>SCAI CONFIGURATION</h2>
+		</div>						
+			<ul >
+			
+
+				<li id="li_3" >
+		<label class="description" for="element_3">Power </label>
+		<span>
+			<br />
+			<input id="shutdown" class="button_text" type="submit" name="submit" value="Shutdown" />
+			<br /><br />
+			<input id="reboot" class="button_text" type="submit" name="submit" value="Reboot" />
+			<br /><br />
+			<input id="clear_db" class="button_text" type="submit" name="submit" value="Clear Database" />
+
+		</span> 
+		</li>	
+
+
+		
+		<li id="li_2" >
+		<label class="description" for="element_2">Java Daemon </label>
+		<span>
+			<br />
+			<label for="dbUpdateFrecuencyMins">Database Update Frequency (mins)</label><input type="number" name= dbUpdateFrecuencyMins min="1">
+			<br /><br />
+			<label for="circularBufferSize">Maximum amount of db entries</label><input type="number" name= circularBufferSize min="1">
+			
+
+		</span> 
+		</li>	
+			
+					<li class="buttons">
+			    <input type="hidden" name="form_id" value="1117648" />
+				<HR COLOR="blue" WIDTH="60%">
+			    <div align="right">
+				<input id="saveForm" class="button_text" type="submit" name="submit" value="Submit" />
+				</div>
+		</li>
+			</ul>
+		</form>	
+
+	</div>
+	<img id="bottom" src="bottom.png" alt="">
+	</body>
+</html>

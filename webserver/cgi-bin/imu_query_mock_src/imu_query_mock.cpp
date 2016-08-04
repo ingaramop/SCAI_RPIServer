@@ -1,7 +1,7 @@
 // @file index.cpp
 // @author Pablo Ingaramo
 // @date 21 mar 2016
-// @brief cgi-bin para el servidor apache2. Obtiene la informacion de los sensores y arma el response RESTfull
+// @brief cgi-bin para el servidor apache2. Obtiene la informacion de los sensores y arma el response RESTful
 
 #include <fcgi_stdio.h>
 #include <stdio.h>
@@ -76,10 +76,6 @@ int main(int argc, char **argv)
         puts("<Response>");
 		trailer.printData();
 		puts("</Response>");
-
-
-
-
     }
     return 0;
 }

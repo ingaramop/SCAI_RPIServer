@@ -14,6 +14,8 @@ echo "Print PWD..."
 
 echo "Deteniendo servicio apache2..."
 service apache2 stop
+echo "Deteniendo servicio mysql..."
+service mysql stop
 
 echo "Compilando..."
 make
@@ -40,3 +42,5 @@ a2ensite default.conf
 
 echo "Iniciando servicio apache2..."
 service apache2 start
+echo "Iniciando servicio mysql..."
+service mysql start

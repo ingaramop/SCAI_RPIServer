@@ -60,9 +60,6 @@ CONFIGURACION DIRECTORIOS EN RPI (PREVIO AL PRIMER DEPLOY)
 5) sudo mkdir /var/www/pi/cgi-bin -> AQUI SE COLOCAN LOS SCRIPTS PUBLICOS
 6) sudo mkdir /home/pi/code -> AQUI SE COLOCAN LOS CODIGOS DE FUENTE CUANDO SE HACE LA TRANSFERENCIA REMOTA POR SSH
 
-INSTALAR INTERFAZ GRAFICA A RASPBIAN JESSIE LITE
-1) apt-get update && apt-get upgrade && apt-get install xserver-xorg xinit xserver-xorg-video-fbdev lxde lxde-common
-
 CONFIGURACION DEL SERVIDOR VNC
 https://www.raspberrypi.org/documentation/remote-access/vnc/
 
@@ -86,7 +83,15 @@ http://ozzmaker.com/product/berryimu-accelerometer-gyroscope-magnetometer-barome
 
 	INTERFACEAR GYRO Y ACELEROMETRO CON LA RPI
 	http://ozzmaker.com/berryimu/
-	1) 
+	(falta completar)
+	Una vez creados los archivos .cgi que consultan el IMU, para poder ejecutarlos desde apache, debo otorgarle permisos al usuario de apache (www-data) para que pueda acceder al puerto i2c. Esto se hace como sigue:
+		- Edito el archivo /etc/group y modifico la linea: i2c:x:998:pi,www-data
+		- ver https://www.raspberrypi.org/forums/viewtopic.php?f=91&t=113549
+		- http://www.sunspot.co.uk/Projects/raspberrypi_LAN_master/webpage_CGI_control/CGI_control.html
+
+CREAR BACKUP SD CARD
+https://thepihut.com/blogs/raspberry-pi-tutorials/17789160-backing-up-and-restoring-your-raspberry-pis-sd-card
+	1)
 
 
 INSTALACION MYSQL
@@ -101,22 +106,65 @@ https://www.stewright.me/2014/06/tutorial-install-mysql-server-on-raspberry-pi/
 	7) mysql -upi -hlocalhost scai -p -> Salgo y vuelvo a ingresar con el nuevo usuario
 	8) use scai -> Pongo en uso la nueva db
 	9) create table history (
-		id int not null auto_increment primary key,
-		date datetime,
-		tipperInclination int,
-		sideInclination int,
-		compass int,
-		temperature double,
-		pressure double,
-		positionX double,
-		positionY double,
-		timestamp double,
-		image blob);
+id int not null auto_increment primary key,
+date timestamp default now(),
+tipperInclination int,
+sideInclination int,
+compass int,
+temperature double,
+pressure double,
+positionX double,
+positionY double,
+timestamp bigint,
+image blob);
+
+	Select ALL: select id,date,tipperInclination,sideInclination ,compass,temperature,pressure,positionX,positionY,timestamp from history;
+	Delete ALL but latest X: DELETE from history WHERE id < (SELECT id FROM (SELECT id FROM history ORDER BY id DESC LIMIT 50) t ORDER BY id ASC LIMIT 1); 
+
+	11) To configure Java Eclipse: Right Click the project -- > build path -- > configure build path. In Libraries Tab press Add External Jar and Select your jar.
+
+
+GPS
+	1) sudo raspi-config -> Disable serial console
+	2) sudo systemctl disable serial-getty@ttyAMA0.service -> Disable serial (this might be redundant)
+	3) sudo nano /boot/config.txt -> set 'enable_uart=1'
+	4) sudo apt-get install gpsd gpsd-clients -> Installs daemon gps receiver more: http://catb.org/gpsd/
+	5) Configure gpsd:
+		sudo nano /etc/default/gpsd
+			START_DAEMON="true"
+			GPSD_OPTIONS="n"
+			DEVICES="/dev/ttyAMA0"
+			USBAUTO="false"
+			GPSD_SOCKET="/var/run/gpsd.sock"
+	5) sudo reboot
+	6) stty -F /dev/ttyAMA0 raw 9600 cs8 clocal -cstopb -> Configures serial device so that it can be listened in ttyAMA0
+	7) cat /dev/ttyAMA0 -> check if it is coming data from uart
+	8) gpsmon /dev/ttyAMA0 (or cgps -s) -> Real-time console gps viewer
+	9) sudo apt-get install libgps-dev -> Libraries necessary to programmatically access gpsd
+
+	troubleshoot:
+		- https://www.raspberrypi.org/forums/viewtopic.php?f=28&t=128028
+		- https://www.raspberrypi.org/forums/viewtopic.php?f=45&t=18115
+		
+
+
 
 
 
 DATABASE UPDATER SERVICE
+http://www.jcgonzalez.com/linux-java-service-wrapper-example
 https://www.raspberrypi.org/documentation/linux/usage/rc-local.md
+	1) El programa java Daemon.jar se encuentra en /home/pi/code/javadaemon/runnableJar/Daemon.jar
+	2) En el mismo directorio se coloca un script wrapper ServiceStarter que se encarga de que funcione como servicio
+	3) Cuando se ejecuta Deploy.sh, ServiceStarter es copiado al directorio /etc/init.d/
+	4) Deploy.sh además le da permisos de ejecución sudo chmod +x /etc/init.d/ServiceStarter
+	5) Finalmente, se puede ejecutar los comandos:
+		Test that it runs ex. sudo service mytestserv start
+		Test that it stops ex. sudo service mytestserv stop
+		Test that it restarts ex. sudo service mytestserv restart
+	6) In Ubuntu use sudo update-rc.d mytestserv defaults if you want to run the service when the SO starts or sudo update-rc.d mytestserv disable to remove from startup.
+
+
 
 		
 		

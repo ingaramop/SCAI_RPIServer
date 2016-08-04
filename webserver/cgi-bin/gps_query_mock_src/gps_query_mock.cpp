@@ -14,7 +14,8 @@
 class GpsData {
 	long timestamp; 
 	float positionX  , positionY ; //coordenadas 
-	float initialPositionX  , initialPositionY ; //coordenadas 
+	float initialPositionX  , initialPositionY; //coordenadas 
+	int altitude, speed;
 	double counter;
 
 
@@ -27,9 +28,11 @@ class GpsData {
 GpsData::GpsData(){
 
 	timestamp = 0; //hm/h
-	initialPositionX= -31.435348f, initialPositionY = -64.193980f; //coordenadas 
+	initialPositionY= -31.435348f, initialPositionX = -64.193980f; //coordenadas 
 	positionX= initialPositionX, positionY = initialPositionY; //coordenadas 
 	counter =0.0;
+	altitude = 200;
+	speed = 50;
 }
 
 
@@ -38,6 +41,8 @@ void GpsData::printData () {
 	printf("	<positionX>%f</positionX>", positionX);
 	printf("	<positionY>%f</positionY>", positionY);
 	printf("	<timestamp>%d</timestamp>", timestamp);
+	printf("	<altitude>%d</altitude>", altitude);
+	printf("	<speed>%d</speed>", speed);
 	return;
 }
 
@@ -50,6 +55,8 @@ void GpsData::setSpeedPosition () {
 	timestamp = (long)(tv.tv_sec * 1000 +(tv.tv_usec/1000)); // milliseconds
 	positionX += sin (counter*(PI/180)) * (0.0004f + (rand() % 10)*0.000035f);
 	positionY += cos (counter*(PI/180)) * (0.0004f +  (rand() % 10)*0.000035f);
+	speed += (rand() % 3)-1;
+	altitude += (rand() % 3)-1;
 
 	counter += 3.0;
 	return;

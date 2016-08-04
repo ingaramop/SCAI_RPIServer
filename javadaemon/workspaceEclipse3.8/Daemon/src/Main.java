@@ -1,6 +1,10 @@
+import java.awt.FlowLayout;
+import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,11 +14,16 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 
 import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -25,15 +34,16 @@ import org.w3c.dom.NodeList;
 
 
 public class Main {
-	//timing variables
+	//timing and exec config variables
 	private static final String USER_AGENT = "Mozilla/5.0";
 	private static final int HTTP_READ_TIMEOUT = 3000; //milliseconds
     private static final int HTTP_CONNECT_TIMEOUT = 3000; //  milliseconds
     private static final int DATABASE_UPDATE_INTERVAL = 1;// minutes
+    private static final int MAX_AMOUNT_OF_DB_ENTRIES = 300; //circular buffer size.
     //addresses
-    private static final String VIDEO_ADDRESS_DEFAULT = "http://192.168.1.10/videostream.cgi?user=pi&pwd=raspberry&resolution=32&rate=2";
-    private static final String IMU_QUERY_ADDRESS_DEFAULT = "http://127.0.0.1/cgi-bin/imuQueryMock.fcgi";
-    private static final String GPS_QUERY_ADDRESS_DEFAULT = "http://127.0.0.1/cgi-bin/gpsQueryMock.fcgi";
+    private static final String SNAPSHOT_ADDRESS = "http://192.168.1.7/snapshot.cgi?user=pi&pwd=raspberry";
+    private static final String IMU_QUERY_ADDRESS_DEFAULT = "http://192.168.1.6/cgi-bin/imuQueryMock.fcgi";
+    private static final String GPS_QUERY_ADDRESS_DEFAULT = "http://127.0.1.6/cgi-bin/gpsQueryMock.fcgi";
     //parsing constants IMU
     private static final String TIPPER_INCLINATION = "tipperInclination";
     private static final String SIDE_INCLINATION = "sideInclination";
@@ -49,20 +59,22 @@ public class Main {
     private static final String MYSQL_PASS = "raspberry";
  // JDBC driver name and database URL
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-    private static final String DB_URL = "jdbc:mysql://localhost/EMP";
+    private static final String DB_URL = "jdbc:mysql://127.0.0.1:3306/scai";
+
 
     
     //non final variables
     private static Element eElement;
     
-    private static String tipperInclination;
-    private static String sideInclination;
-    private static String compass;
-    private static String temperature;
-    private static String pressure;
-    private static String positionX;
-    private static String positionY;
-    private static String timestamp;
+    private static int tipperInclination;
+    private static int sideInclination;
+    private static int compass;
+    private static double temperature;
+    private static double pressure;
+    private static double positionX;
+    private static double positionY;
+    private static long timestamp;
+    private static ByteArrayInputStream inStream;
     
     
     
@@ -71,84 +83,102 @@ public class Main {
 	public static void main(String[] args) {
 		InputStream stream;
 		
-		// repeat idefinitely
+		// repeat indefinitely
 		while(true){	
 			
 			//get IMU web service data
 			eElement = HTTPGetAndParse(IMU_QUERY_ADDRESS_DEFAULT);
 			if(eElement == null){
-				tipperInclination = "";
-				sideInclination = "";
-				compass = "";
-				temperature = "";
-				pressure = "";
+				tipperInclination = 0;
+				sideInclination = 0;
+				compass = 0;
+				temperature = 0;
+				pressure = 0;
 			}
 			else{
 				try{
-					tipperInclination = eElement.getElementsByTagName(TIPPER_INCLINATION).item(0).getTextContent();
-					sideInclination = eElement.getElementsByTagName(SIDE_INCLINATION).item(0).getTextContent();
-					compass = eElement.getElementsByTagName(COMPASS).item(0).getTextContent();
-					temperature = eElement.getElementsByTagName(TEMPERATURE).item(0).getTextContent();
-					pressure = eElement.getElementsByTagName(PRESSURE).item(0).getTextContent();
+					tipperInclination = Integer.valueOf(eElement.getElementsByTagName(TIPPER_INCLINATION).item(0).getTextContent());
+					sideInclination = Integer.valueOf(eElement.getElementsByTagName(SIDE_INCLINATION).item(0).getTextContent());
+					compass = Integer.valueOf(eElement.getElementsByTagName(COMPASS).item(0).getTextContent());
+					temperature = Double.valueOf(eElement.getElementsByTagName(TEMPERATURE).item(0).getTextContent());
+					pressure = Double.valueOf(eElement.getElementsByTagName(PRESSURE).item(0).getTextContent());
 				}catch (Exception e){
 					e.printStackTrace();
-					tipperInclination = "";
-					sideInclination = "";
-					compass = "";
-					temperature = "";
-					pressure = "";
+					tipperInclination = 0;
+					sideInclination = 0;
+					compass = 0;
+					temperature = 0;
+					pressure = 0;
 				}			
 			}
 	
 			//get GPS web service data
 			eElement = HTTPGetAndParse(GPS_QUERY_ADDRESS_DEFAULT);
 			if(eElement == null){
-					positionX = "";
-					positionY = "";
-					timestamp = "";				
+					positionX = 0;
+					positionY = 0;
+					timestamp = 0;				
 			}
 			else{
 				try{
-					positionX = eElement.getElementsByTagName(POSITION_X).item(0).getTextContent();
-					positionY = eElement.getElementsByTagName(POSITION_Y).item(0).getTextContent();
-					timestamp = eElement.getElementsByTagName(TIMESTAMP).item(0).getTextContent();
+					positionX = Double.valueOf(eElement.getElementsByTagName(POSITION_X).item(0).getTextContent());
+					positionY = Double.valueOf(eElement.getElementsByTagName(POSITION_Y).item(0).getTextContent());
+					timestamp = Long.valueOf(eElement.getElementsByTagName(TIMESTAMP).item(0).getTextContent());
 				}
 				catch(Exception e){
 					e.printStackTrace();
-					positionX = "";
-					positionY = "";
-					timestamp = "";		
+					positionX = 0;
+					positionY = 0;
+					timestamp = 0;		
 				}
 			}
 			
-			System.out.println(tipperInclination);
-			System.out.println(sideInclination);
-			System.out.println(compass);
-			System.out.println(temperature);
-			System.out.println(pressure);
-			System.out.println(positionX);
-			System.out.println(positionY);
-			System.out.println(timestamp);
+			//print data
+			System.out.println("tipperInclination " + tipperInclination);
+			System.out.println("sideInclination " + sideInclination);
+			System.out.println("compass " + compass);
+			System.out.println("temperature " + temperature);
+			System.out.println("pressure " + pressure);
+			System.out.println("positionX " + positionX);
+			System.out.println("positionY " + positionY);
+			System.out.println("timestamp " + timestamp);
 			System.out.println();
 			
 		
 			//get snapshot from camera
 			URL imageURL;
 			try {
-				imageURL = new URL("http://192.168.1.2/snapshot.cgi?user=pi&pwd=raspberry");
+				imageURL = new URL(SNAPSHOT_ADDRESS);
 				// Case 1
 			    BufferedImage img = ImageIO.read(imageURL);
 			    System.out.println(img);
+
+	            ByteArrayOutputStream out = new ByteArrayOutputStream();
+	            ImageIO.write(img,"jpeg",out);
+//	            JFrame frame = new JFrame();
+//	            frame.getContentPane().setLayout(new FlowLayout());
+//	            frame.getContentPane().add(new JLabel(new ImageIcon(img)));
+//
+//	            frame.pack();
+//	            frame.setVisible(true);
+	            byte[] buf = out.toByteArray();
+	            // setup stream for blob
+	            inStream = new ByteArrayInputStream(buf);
 			} catch (MalformedURLException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
-			} catch (IOException e) {
+			} catch (IOException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		
 					    
 			//store obtained data into database
-			dbStoreValues();		
+			dbStoreValues();	
+			dbDeleteOldValues();
 				
 			// Sleep for DATABASE_UPDATE_INTERVAL minutes
 			try {
@@ -163,42 +193,31 @@ public class Main {
 	}
 		
 		
-	private static void dbStoreValues(){
+	private static void dbDeleteOldValues() {
 		Connection conn = null;
-		   Statement stmt = null;
+
 		   try{
-		      //STEP 2: Register JDBC driver
 		      Class.forName(JDBC_DRIVER);
 
 		      //STEP 3: Open a connection
-		      System.out.println("Connecting to database...");
+		      System.out.println("Connecting to database to delete old values...");
 		      conn = DriverManager.getConnection(DB_URL,MYSQL_USER,MYSQL_PASS);
 
 		      //STEP 4: Execute a query
-		      System.out.println("Creating statement...");
-		      stmt = conn.createStatement();
-		      String sql;
-		      sql = "SELECT id, first, last, age FROM Employees";
-		      ResultSet rs = stmt.executeQuery(sql);
+		   // the mysql insert statement
+		      String query = " DELETE from history WHERE id < (SELECT id FROM (SELECT id FROM history ORDER BY id DESC LIMIT ?) t ORDER BY id ASC LIMIT 1);";
+  
 
-		      //STEP 5: Extract data from result set
-		      while(rs.next()){
-		         //Retrieve by column name
-		         int id  = rs.getInt("id");
-		         int age = rs.getInt("age");
-		         String first = rs.getString("first");
-		         String last = rs.getString("last");
-
-		         //Display values
-		         System.out.print("ID: " + id);
-		         System.out.print(", Age: " + age);
-		         System.out.print(", First: " + first);
-		         System.out.println(", Last: " + last);
-		      }
+		      // create the mysql insert prepared statement
+		      PreparedStatement preparedStmt = conn.prepareStatement(query);
+		      preparedStmt.setInt (1, MAX_AMOUNT_OF_DB_ENTRIES);
+		      
+		      // execute the prepared statement
+		      preparedStmt.execute();	      
 		      //STEP 6: Clean-up environment
-		      rs.close();
-		      stmt.close();
+		      preparedStmt.close();
 		      conn.close();
+		      System.out.println("Successfully closed");
 		   }catch(SQLException se){
 		      //Handle errors for JDBC
 		      se.printStackTrace();
@@ -206,19 +225,66 @@ public class Main {
 		      //Handle errors for Class.forName
 		      e.printStackTrace();
 		   }finally{
-		      //finally block used to close resources
-		      try{
-		         if(stmt!=null)
-		            stmt.close();
-		      }catch(SQLException se2){
-		      }// nothing we can do
-		      try{
+		      	      try{
 		         if(conn!=null)
 		            conn.close();
 		      }catch(SQLException se){
 		         se.printStackTrace();
 		      }//end finally try
 		   }//end try
+		
+	}
+
+
+	private static void dbStoreValues(){
+		Connection conn = null;
+
+	   try{
+	      //STEP 2: Register JDBC driver
+	      Class.forName(JDBC_DRIVER);
+
+	      //STEP 3: Open a connection
+	      System.out.println("Connecting to database to insert values...");
+	      conn = DriverManager.getConnection(DB_URL,MYSQL_USER,MYSQL_PASS);
+
+	      //STEP 4: Execute a query
+	   // the mysql insert statement
+	      String query = " insert into history (tipperInclination, sideInclination, compass" +
+	      		", temperature, pressure, positionX, positionY, timestamp, image)"
+	        + " values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+	      // create the mysql insert prepared statement
+	      PreparedStatement preparedStmt = conn.prepareStatement(query);
+	      preparedStmt.setInt (1, tipperInclination);
+	      preparedStmt.setInt (2, sideInclination);
+	      preparedStmt.setInt   (3, compass);
+	      preparedStmt.setDouble(4, temperature);
+	      preparedStmt.setDouble(5, pressure);
+	      preparedStmt.setDouble(6, positionX);
+	      preparedStmt.setDouble(7, positionY);
+	      preparedStmt.setLong(8, timestamp);
+	      if (inStream != null)  preparedStmt.setBinaryStream(9,inStream,inStream.available());
+	      else preparedStmt.setNull(9, Types.BLOB);
+	      // execute the prepared statement
+	      preparedStmt.execute();	      
+	      //STEP 6: Clean-up environment
+	      preparedStmt.close();
+	      conn.close();
+	      System.out.println("Successfully closed");
+	   }catch(SQLException se){
+	      //Handle errors for JDBC
+	      se.printStackTrace();
+	   }catch(Exception e){
+	      //Handle errors for Class.forName
+	      e.printStackTrace();
+	   }finally{
+	      	      try{
+	         if(conn!=null)
+	            conn.close();
+	      }catch(SQLException se){
+	         se.printStackTrace();
+	      }//end finally try
+	   }//end try
 	}
 	
 	private static Element HTTPGetAndParse(String URL) {
@@ -274,6 +340,7 @@ public class Main {
         }
         return null;
     }
+	
 
 
 }
