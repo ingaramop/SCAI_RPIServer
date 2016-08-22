@@ -42,7 +42,7 @@ puts("<Response>");
 				printf("	<positionX>%f</positionX>", gps_data.fix.longitude);
 				printf("	<positionY>%f</positionY>", gps_data.fix.latitude);
 				printf("	<timestamp>%ld</timestamp>", tv.tv_sec);
-				printf("	<altitude>%d</altitude>", altitude_aux;
+				printf("	<altitude>%d</altitude>", altitude_aux);
 				printf("	<speed>%d</speed>", (int) (gps_data.fix.speed - 0.5f));
 				//printf("	<satellites>%d</satellites>", gps_data.fix.satellites_used);
             } else {

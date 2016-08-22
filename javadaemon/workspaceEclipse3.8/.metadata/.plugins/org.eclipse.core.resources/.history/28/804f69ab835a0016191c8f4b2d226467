@@ -42,8 +42,8 @@ public class Main {
     private static final int MAX_AMOUNT_OF_DB_ENTRIES = 300; //circular buffer size.
     //addresses
     private static final String SNAPSHOT_ADDRESS = "http://192.168.1.10/snapshot.cgi?user=pi&pwd=raspberry";
-    private static final String IMU_QUERY_ADDRESS_DEFAULT = "http://192.168.1.2/cgi-bin/imuQuery.cgi";
-    private static final String GPS_QUERY_ADDRESS_DEFAULT = "http://127.0.1.2/cgi-bin/gpsQuery.fcgi";
+    private static final String IMU_QUERY_ADDRESS_DEFAULT = "http://192.168.1.5/cgi-bin/imuQuery.cgi";
+    private static final String GPS_QUERY_ADDRESS_DEFAULT = "http://127.0.1.5/cgi-bin/gpsQuery.fcgi";
     //parsing constants IMU
     private static final String TIPPER_INCLINATION = "tipperInclination";
     private static final String SIDE_INCLINATION = "sideInclination";
@@ -61,7 +61,7 @@ public class Main {
     private static final String MYSQL_PASS = "raspberry";
  // JDBC driver name and database URL
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-    private static final String DB_URL = "jdbc:mysql://127.0.0.1:3306/scai";
+    private static final String DB_URL = "jdbc:mysql://192.168.1.5:3306/scai";
 
 
     
@@ -263,7 +263,7 @@ public class Main {
 	   // the mysql insert statement
 	      String query = " insert into history (tipperInclination, sideInclination, compass" +
 	      		", temperature, pressure, positionX, positionY, timestamp, image, speed, altitude)"
-	        + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+	        + " values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 	      // create the mysql insert prepared statement
 	      PreparedStatement preparedStmt = conn.prepareStatement(query);
